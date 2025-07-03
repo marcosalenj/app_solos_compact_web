@@ -49,13 +49,13 @@ app.layout = dbc.Container([
             dbc.Input(id="peso", type="number", placeholder="Ex: 964", className="mb-3"),
 
             dbc.Label("Volume do cilindro (L):"),
-            dbc.Input(id="volume", type="number", placeholder="Ex: 1.5", className="mb-3"),
+            dbc.Input(id="volume", type="number", placeholder="Ex: 1.5", step=0.1, className="mb-3"),
 
-            dbc.Label("Densidade máxima (g/cm³):"),
-            dbc.Input(id="densidade", type="number", step=0.01, placeholder="Ex: 2.1", className="mb-3"),
+            dbc.Label("Densidade máxima (ex: 1883):"),
+            dbc.Input(id="densidade", type="number", placeholder="Ex: 1883", className="mb-3"),
 
-            dbc.Label("Umidade ótima (%):"),
-            dbc.Input(id="umidade", type="number", step=0.1, placeholder="Ex: 7.4", className="mb-3"),
+            dbc.Label("Umidade ótima (%) (ex: 7,4):"),
+            dbc.Input(id="umidade", type="text", placeholder="Ex: 7,4", className="mb-3"),
 
             dbc.Button("Gerar Ensaios", id="gerar", className="mt-3 w-100", color="primary"),
         ], md=6),
@@ -65,7 +65,7 @@ app.layout = dbc.Container([
     html.Div(id="output")
 ], fluid=True)
 
-# ==== Callback principal ====
+# ==== Callback ====
 
 @app.callback(
     Output("output", "children"),
@@ -77,9 +77,15 @@ app.layout = dbc.Container([
     State("densidade", "value"),
     State("umidade", "value")
 )
-def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima, umidade_hot):
-    if not all([n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima, umidade_hot]):
+def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_raw, umidade_raw):
+    if not all([n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_raw, umidade_raw]):
         return dbc.Alert("⚠️ Preencha todos os campos corretamente.", color="danger")
+
+    try:
+        densidade_maxima = float(densidade_raw) / 1000
+        umidade_hot = float(str(umidade_raw).replace(",", "."))
+    except ValueError:
+        return dbc.Alert("⚠️ Valores inválidos. Verifique a densidade e a umidade.", color="danger")
 
     umidades = gerar_umidades(umidade_hot, qtd)
     ensaios = []
@@ -88,7 +94,6 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima
         umidade = umidades[i]
         grau = gerar_grau_compactacao(tipo)
 
-        # Cálculos corrigidos:
         dens_sec = (grau * densidade_maxima) / 100
         dens_umid = ((100 + umidade) * dens_sec) / 100
         volume_cm3 = volume_cilindro * 1000
