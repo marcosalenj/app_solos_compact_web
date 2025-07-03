@@ -6,8 +6,7 @@ import random
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
-# ==== Funções auxiliares ====
-
+# Funções auxiliares
 def frange(start, stop, step):
     while start <= stop:
         yield round(start, 2)
@@ -24,8 +23,7 @@ def gerar_grau_compactacao(tipo):
         return round(random.uniform(94.5, 96.4), 1)
     return round(random.uniform(100.0, 102.0), 1)
 
-# ==== Layout ====
-
+# Layout
 app.layout = dbc.Container([
     html.H2("Simulador de Ensaios de Solo", className="text-center my-4"),
 
@@ -43,7 +41,7 @@ app.layout = dbc.Container([
             ),
 
             dbc.Label("Quantidade de ensaios:"),
-            dbc.Input(id="qtd", type="number", min=1, placeholder="Ex: 5", className="mb-3"),
+            dbc.Input(id="qtd", type="number", placeholder="Ex: 5", className="mb-3"),
 
             dbc.Label("Peso do cilindro (g):"),
             dbc.Input(id="peso", type="number", placeholder="Ex: 964", className="mb-3"),
@@ -65,8 +63,7 @@ app.layout = dbc.Container([
     html.Div(id="output")
 ], fluid=True)
 
-# ==== Callback ====
-
+# Callback
 @app.callback(
     Output("output", "children"),
     Input("gerar", "n_clicks"),
@@ -94,6 +91,7 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_raw, u
         umidade = umidades[i]
         grau = gerar_grau_compactacao(tipo)
 
+        # Cálculos idênticos ao Streamlit
         dens_sec = (grau * densidade_maxima) / 100
         dens_umid = ((100 + umidade) * dens_sec) / 100
         volume_cm3 = volume_cilindro * 1000
@@ -101,24 +99,25 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_raw, u
         peso_total = peso_solo + peso_cilindro
         delta_umid = round(umidade - umidade_hot, 2)
 
-        bloco = dbc.Card([
+        ensaio = dbc.Card([
             dbc.CardBody([
                 html.H5(f"🔹 Ensaio {i+1:02}", className="mb-3"),
-                html.P(f"- **Peso do Cilindro + Solo:** {int(round(peso_total))} g"),
-                html.P(f"- **Peso do Solo:** {int(round(peso_solo))} g"),
-                html.P(f"- **Densidade Úmida:** {dens_umid:.3f} g/cm³"),
-                html.P(f"- **Umidade:** {umidade:.1f} %"),
-                html.P(f"- **Densidade Seca:** {dens_sec:.3f} g/cm³"),
-                html.P(f"- **Grau de Compactação:** {grau:.1f} %"),
-                html.P(f"- **Δ Umidade:** {delta_umid:.1f}"),
+                html.Div([
+                    dcc.Markdown(f"- **Peso do Cilindro + Solo:** {int(round(peso_total))} g"),
+                    dcc.Markdown(f"- **Peso do Solo:** {int(round(peso_solo))} g"),
+                    dcc.Markdown(f"- **Densidade Úmida:** {dens_umid:.3f} g/cm³"),
+                    dcc.Markdown(f"- **Umidade:** {umidade:.1f} %"),
+                    dcc.Markdown(f"- **Densidade Seca:** {dens_sec:.3f} g/cm³"),
+                    dcc.Markdown(f"- **Grau de Compactação:** {grau:.1f} %"),
+                    dcc.Markdown(f"- **Δ Umidade:** {delta_umid:.1f}"),
+                ])
             ])
         ], className="mb-3 shadow-sm")
 
-        ensaios.append(bloco)
+        ensaios.append(ensaio)
 
     return [dbc.Alert("✅ Ensaios gerados com sucesso!", color="success")] + ensaios
 
-# ==== Execução ====
-
+# Execução
 if __name__ == "__main__":
     app.run_server(debug=True)
