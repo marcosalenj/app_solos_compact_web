@@ -1,0 +1,1 @@
+# app_solos_compact_web
