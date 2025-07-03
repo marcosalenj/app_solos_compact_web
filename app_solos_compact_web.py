@@ -1,11 +1,12 @@
 import dash
-from dash import html, dcc, Input, Output, State, ctx
+from dash import html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc
 import random
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
+# Funções auxiliares
 def frange(start, stop, step):
     while start <= stop:
         yield round(start, 2)
@@ -22,6 +23,7 @@ def gerar_grau_compactacao(tipo):
         return round(random.uniform(94.5, 96.4), 1)
     return round(random.uniform(100.0, 102.0), 1)
 
+# Layout
 app.layout = dbc.Container([
     html.H2("Simulador de Ensaios de Solo", className="text-center my-4"),
 
@@ -34,24 +36,26 @@ app.layout = dbc.Container([
                     {"label": "1º Aterro / Ligação", "value": "1º Aterro / Ligação"},
                     {"label": "2º Aterro / Sub-base", "value": "2º Aterro / Sub-base"}
                 ],
-                value="1º Aterro / Ligação"
+                value="1º Aterro / Ligação",
+                className="mb-3"
             ),
+
             dbc.Label("Quantidade de ensaios:"),
-            dbc.Input(id="qtd", type="number", placeholder="Ex: 5"),
+            dbc.Input(id="qtd", type="number", min=1, placeholder="Ex: 5", className="mb-3"),
 
             dbc.Label("Peso do cilindro (g):"),
-            dbc.Input(id="peso", type="number", placeholder="Ex: 964"),
+            dbc.Input(id="peso", type="number", placeholder="Ex: 964", className="mb-3"),
 
             dbc.Label("Volume do cilindro (L):"),
-            dbc.Input(id="volume", type="number", placeholder="Ex: 1.5"),
+            dbc.Input(id="volume", type="number", placeholder="Ex: 1.5", className="mb-3"),
 
-            dbc.Label("Densidade máxima:"),
-            dbc.Input(id="densidade", type="number", placeholder="Ex: 2.1"),
+            dbc.Label("Densidade máxima (g/cm³):"),
+            dbc.Input(id="densidade", type="number", step=0.01, placeholder="Ex: 2.1", className="mb-3"),
 
             dbc.Label("Umidade ótima (%):"),
-            dbc.Input(id="umidade", type="number", placeholder="Ex: 7.4"),
+            dbc.Input(id="umidade", type="number", step=0.1, placeholder="Ex: 7.4", className="mb-3"),
 
-            dbc.Button("Gerar Ensaios", id="gerar", className="mt-3", color="primary"),
+            dbc.Button("Gerar Ensaios", id="gerar", className="mt-3 w-100", color="primary"),
         ], md=6),
     ]),
 
@@ -59,6 +63,7 @@ app.layout = dbc.Container([
     html.Div(id="output")
 ], fluid=True)
 
+# Callback
 @app.callback(
     Output("output", "children"),
     Input("gerar", "n_clicks"),
@@ -74,7 +79,7 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima
         return dbc.Alert("⚠️ Preencha todos os campos corretamente.", color="danger")
 
     umidades = gerar_umidades(umidade_hot, qtd)
-    ensaios_cards = []
+    ensaios = []
 
     for i in range(qtd):
         umidade = umidades[i]
@@ -86,30 +91,23 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima
         peso_total = peso_solo + peso_cilindro
         delta_umid = round(umidade - umidade_hot, 2)
 
-        ensaio = dbc.Card([
-            dbc.CardHeader(
-                dbc.Button(f"🔹 Ensaio {i+1:02}", id=f"group-{i}-toggle", color="link", n_clicks=0)
-            ),
-            dbc.Collapse(
-                dbc.CardBody([
-                    html.Ul([
-                        html.Li(f"Peso do Cilindro + Solo: {int(round(peso_total))} g"),
-                        html.Li(f"Peso do Solo: {int(round(peso_solo))} g"),
-                        html.Li(f"Densidade Úmida: {dens_umid:.3f} g/cm³"),
-                        html.Li(f"Umidade: {umidade:.1f} %"),
-                        html.Li(f"Densidade Seca: {dens_sec:.3f} g/cm³"),
-                        html.Li(f"Grau de Compactação: {grau:.1f} %"),
-                        html.Li(f"Δ Umidade: {delta_umid:.1f}"),
-                    ])
-                ]),
-                id=f"collapse-{i}",
-                is_open=True
-            )
-        ], className="mb-3")
+        bloco = dbc.Card([
+            dbc.CardBody([
+                html.H5(f"🔹 Ensaio {i+1:02}", className="mb-3"),
+                html.P(f"- **Peso do Cilindro + Solo:** {int(round(peso_total))} g"),
+                html.P(f"- **Peso do Solo:** {int(round(peso_solo))} g"),
+                html.P(f"- **Densidade Úmida:** {dens_umid:.3f} g/cm³"),
+                html.P(f"- **Umidade:** {umidade:.1f} %"),
+                html.P(f"- **Densidade Seca:** {dens_sec:.3f} g/cm³"),
+                html.P(f"- **Grau de Compactação:** {grau:.1f} %"),
+                html.P(f"- **Δ Umidade:** {delta_umid:.1f}"),
+            ], style={"whiteSpace": "pre-wrap"})
+        ], className="mb-3 shadow-sm")
 
-        ensaios_cards.append(ensaio)
+        ensaios.append(bloco)
 
-    return [dbc.Alert("✅ Ensaios gerados com sucesso!", color="success")] + ensaios_cards
+    return [dbc.Alert("✅ Ensaios gerados com sucesso!", color="success")] + ensaios
 
+# Execução
 if __name__ == "__main__":
     app.run_server(debug=True)
