@@ -6,7 +6,8 @@ import random
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
-# Funções auxiliares
+# ==== Funções auxiliares ====
+
 def frange(start, stop, step):
     while start <= stop:
         yield round(start, 2)
@@ -23,7 +24,8 @@ def gerar_grau_compactacao(tipo):
         return round(random.uniform(94.5, 96.4), 1)
     return round(random.uniform(100.0, 102.0), 1)
 
-# Layout
+# ==== Layout ====
+
 app.layout = dbc.Container([
     html.H2("Simulador de Ensaios de Solo", className="text-center my-4"),
 
@@ -63,7 +65,8 @@ app.layout = dbc.Container([
     html.Div(id="output")
 ], fluid=True)
 
-# Callback
+# ==== Callback principal ====
+
 @app.callback(
     Output("output", "children"),
     Input("gerar", "n_clicks"),
@@ -84,6 +87,8 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima
     for i in range(qtd):
         umidade = umidades[i]
         grau = gerar_grau_compactacao(tipo)
+
+        # Cálculos corrigidos:
         dens_sec = (grau * densidade_maxima) / 100
         dens_umid = ((100 + umidade) * dens_sec) / 100
         volume_cm3 = volume_cilindro * 1000
@@ -101,13 +106,14 @@ def gerar_ensaios(n, tipo, qtd, peso_cilindro, volume_cilindro, densidade_maxima
                 html.P(f"- **Densidade Seca:** {dens_sec:.3f} g/cm³"),
                 html.P(f"- **Grau de Compactação:** {grau:.1f} %"),
                 html.P(f"- **Δ Umidade:** {delta_umid:.1f}"),
-            ], style={"whiteSpace": "pre-wrap"})
+            ])
         ], className="mb-3 shadow-sm")
 
         ensaios.append(bloco)
 
     return [dbc.Alert("✅ Ensaios gerados com sucesso!", color="success")] + ensaios
 
-# Execução
+# ==== Execução ====
+
 if __name__ == "__main__":
     app.run_server(debug=True)
